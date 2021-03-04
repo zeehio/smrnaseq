@@ -719,7 +719,7 @@ process mirtrace {
          echo \$path","\$prefix
      done > mirtrace_config
 
-     mirtrace qc \\
+     java -Xms4096M -Xmx4096M -jar mirtrace.jar --mirtrace-wrapper-name mirtrace qc \\
          --species $params.mirtrace_species \\
          $primer \\
          --protocol $protocol \\
