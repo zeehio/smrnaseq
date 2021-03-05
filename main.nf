@@ -712,7 +712,7 @@ process mirtrace {
      script:
      primer = (protocol=="cats") ? " " : " --adapter $three_prime_adapter "
      """
-     mirtracejar=\$(dirname \$(which mirtrace))
+     export mirtracejar=\$(dirname \$(which mirtrace))
      echo \$mirtracejar
      for i in $reads
      do
