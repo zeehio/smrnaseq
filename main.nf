@@ -274,7 +274,8 @@ process get_software_versions {
    samtools --version > v_samtools.txt
    htseq-count -h > v_htseq.txt
    fasta_formatter -h > v_fastx.txt
-   mirtrace --version > v_mirtrace.txt
+   mirtracejar=\$(dirname \$(which mirtrace))
+   java -jar \$mirtracejar/mirtrace.jar --mirtrace-wrapper-name mirtrace --version > v_mirtrace.txt
    multiqc --version > v_multiqc.txt
    scrape_software_versions.py > software_versions_mqc.yaml
    """
