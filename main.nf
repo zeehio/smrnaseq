@@ -711,6 +711,7 @@ process mirtrace {
 
      script:
      primer = (protocol=="cats") ? " " : " --adapter $three_prime_adapter "
+     memory = task.memory.toMega()/2 + "M"
      """
      export mirtracejar=\$(dirname \$(which mirtrace))
      echo \$mirtracejar
@@ -721,7 +722,7 @@ process mirtrace {
          echo \$path","\$prefix
      done > mirtrace_config
 
-     java -Xms4096M -Xmx4096M -jar \$mirtracejar/mirtrace.jar --mirtrace-wrapper-name mirtrace qc \\
+     java -Xms$memory -Xmx$memory -jar \$mirtracejar/mirtrace.jar --mirtrace-wrapper-name mirtrace qc \\
          --species $params.mirtrace_species \\
          $primer \\
          --protocol $protocol \\
