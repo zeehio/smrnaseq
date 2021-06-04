@@ -264,7 +264,13 @@ process get_software_versions {
    file "software_versions.csv"
 
    script:
+   java_mem = ''
+   if(task.memory){
+       tmem = task.memory.toBytes()
+       java_mem = "-Xms${tmem} -Xmx${tmem}"
+   }
    """
+   export mirtracejar=\$(dirname \$(which mirtrace))
    echo $workflow.manifest.version > v_pipeline.txt
    echo $workflow.nextflow.version > v_nextflow.txt
    echo \$(R --version 2>&1) > v_R.txt
@@ -274,7 +280,7 @@ process get_software_versions {
    samtools --version > v_samtools.txt
    htseq-count -h > v_htseq.txt
    fasta_formatter -h > v_fastx.txt
-   mirtrace --version > v_mirtrace.txt
+   java $java_mem -jar \$mirtracejar/mirtrace.jar --mirtrace-wrapper-name mirtrace --version > v_mirtrace.txt
    multiqc --version > v_multiqc.txt
    scrape_software_versions.py > software_versions_mqc.yaml
    """
@@ -303,13 +309,13 @@ process make_bowtie_index {
     seqkit seq --rna2dna mature_sps.fa > mature_igenome.fa
     fasta_formatter -w 0 -i mature_igenome.fa -o mature_idx.fa
     # fasta_nucleotide_changer -d -i mature_igenome.fa -o mature_idx.fa
-    bowtie-build mature_idx.fa mature_idx
+    bowtie-build mature_idx.fa mature_idx --threads ${task.cpus}
 
     seqkit grep -r --pattern \".*${params.mirtrace_species}-.*\" $hairpin > hairpin_sps.fa
     seqkit seq --rna2dna hairpin_sps.fa > hairpin_igenome.fa
     # fasta_nucleotide_changer -d -i hairpin_igenome.fa -o hairpin_idx.fa
     fasta_formatter -w 0 -i hairpin_igenome.fa -o hairpin_idx.fa
-    bowtie-build hairpin_idx.fa hairpin_idx
+    bowtie-build hairpin_idx.fa hairpin_idx --threads ${task.cpus}
     """
 }
 
@@ -332,7 +338,7 @@ process fastqc {
 
     script:
     """
-    fastqc -q $reads
+    fastqc --quiet --threads $task.cpus $reads
     """
 }
 
@@ -700,6 +706,7 @@ if( params.bt_index ) {
  * STEP 7 - miRTrace
  */
 process mirtrace {
+    label 'process_medium'
      tag "$reads"
      publishDir "${params.outdir}/miRTrace", mode: 'copy'
       
@@ -711,7 +718,13 @@ process mirtrace {
 
      script:
      primer = (protocol=="cats") ? " " : " --adapter $three_prime_adapter "
+     java_mem = ''
+     if(task.memory){
+         tmem = task.memory.toBytes()
+         java_mem = "-Xms${tmem} -Xmx${tmem}"
+     }
      """
+     export mirtracejar=\$(dirname \$(which mirtrace))
      for i in $reads
      do
          path=\$(realpath \${i})
@@ -719,7 +732,7 @@ process mirtrace {
          echo \$path","\$prefix
      done > mirtrace_config
 
-     mirtrace qc \\
+     java $java_mem -jar \$mirtracejar/mirtrace.jar --mirtrace-wrapper-name mirtrace qc \\
          --species $params.mirtrace_species \\
          $primer \\
          --protocol $protocol \\
